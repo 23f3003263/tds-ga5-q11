@@ -6,7 +6,7 @@ services:
     buildCommand: "npm install"
     startCommand: "node server.js"
     envVars:
-      - key: ANTHROPIC_API_KEY
+      - key: AIPIPE_TOKEN
         sync: false
       - key: MODEL_NAME
-        value: claude-3-5-haiku-20241022
+        value: openai/gpt-4o-mini
