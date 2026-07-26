@@ -141,15 +141,23 @@ ${evidenceList}`;
           ],
         }),
       });
-      const data = await resp.json();
+      const rawText = await resp.text();
+      if (!resp.ok) {
+        console.error(`AI Pipe HTTP ${resp.status}: ${rawText.slice(0, 500)}`);
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const data = JSON.parse(rawText);
       const text = data.choices?.[0]?.message?.content || '';
       const cleaned = text.replace(/```json|```/g, '').trim();
       modelJSON = JSON.parse(cleaned);
     } catch (e) {
+      console.error('AI Pipe call failed:', e.message);
       modelJSON = null; // fall through to heuristic
     }
+  } else {
+    console.error('AIPIPE_TOKEN is empty — skipping model call, using heuristic fallback.');
   }
-  
+
   if (!modelJSON) {
     // Heuristic fallback (no API key / parse failure): keep the run functional.
     const rc = (incident.allowedRootCauses || [])[0] || 'unknown';
