@@ -4,6 +4,7 @@
 const http = require('http');
 const crypto = require('crypto');
 
+const PORT = process.env.PORT || 3000;
 const AIPIPE_TOKEN = process.env.AIPIPE_TOKEN || '';
 const AIPIPE_BASE_URL = process.env.AIPIPE_BASE_URL || 'https://aipipe.org/openrouter/v1';
 const MODEL_NAME = process.env.MODEL_NAME || 'openai/gpt-4o-mini';
