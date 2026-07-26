@@ -1,64 +1,91 @@
 import os
 import json
-
-# Agar OpenAI use karna ho
 from openai import OpenAI
 
 
 class AIPlanner:
-    def __init__(self):
-        self.client = OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
 
-    def plan(self, transcript, allowed_root_causes):
-        """
-        Returns:
-        {
-            "rootCause": "...",
-            "evidence": ["ev_1","ev_5"]
-        }
-        """
+    def __init__(self):
+        api_key = os.getenv("OPENAI_API_KEY")
+
+        if not api_key:
+            raise Exception("OPENAI_API_KEY not found")
+
+        self.client = OpenAI(api_key=api_key)
+
+    def plan(
+        self,
+        transcript,
+        allowed_root_causes,
+        tool_catalog,
+        maximum_diagnostics
+    ):
 
         prompt = f"""
 You are an incident response planner.
 
-Choose ONLY ONE root cause from this list:
+You must solve ONE incident.
 
-{json.dumps(allowed_root_causes)}
+Choose exactly ONE root cause.
 
-Return ONLY JSON.
+Choose ONLY the minimum number of diagnostic tools required.
 
-Format:
+Never exceed {maximum_diagnostics} diagnostics.
 
-{{
-    "rootCause":"...",
-    "evidence":["ev_1","ev_2"]
-}}
+Return ONLY valid JSON.
 
-Rules:
+Allowed Root Causes:
 
-1. Choose exactly one allowed root cause.
-2. Evidence must contain 2-4 evidence IDs.
-3. Do not explain anything.
-4. Output JSON only.
+{json.dumps(allowed_root_causes, indent=2)}
+
+Available Tools:
+
+{json.dumps(tool_catalog, indent=2)}
 
 Transcript:
 
 {transcript}
+
+Output Format:
+
+{{
+    "rootCause":"...",
+    "evidence":[
+        "ev_x",
+        "ev_y"
+    ],
+    "diagnostics":[
+        {{
+            "tool":"query_metrics",
+            "arguments":{{}}
+        }}
+    ]
+}}
 """
 
         response = self.client.chat.completions.create(
+
             model="gpt-4.1-mini",
+
+            temperature=0,
+
+            response_format={
+                "type": "json_object"
+            },
+
             messages=[
+                {
+                    "role": "system",
+                    "content":
+                    "You are a precise incident-response planner. Return JSON only."
+                },
                 {
                     "role": "user",
                     "content": prompt
                 }
-            ],
-            temperature=0
+            ]
         )
 
-        content = response.choices[0].message.content
+        result = response.choices[0].message.content
 
-        return json.loads(content)
+        return json.loads(result)
