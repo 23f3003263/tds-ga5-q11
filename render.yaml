@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: incident-agent
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: MODEL_NAME
+        value: claude-3-5-haiku-20241022
