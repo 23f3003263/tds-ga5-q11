@@ -4,9 +4,9 @@
 const http = require('http');
 const crypto = require('crypto');
 
-const PORT = process.env.PORT || 3000;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const MODEL_NAME = process.env.MODEL_NAME || 'claude-3-5-haiku-20241022';
+const AIPIPE_TOKEN = process.env.AIPIPE_TOKEN || '';
+const AIPIPE_BASE_URL = process.env.AIPIPE_BASE_URL || 'https://aipipe.org/openrouter/v1';
+const MODEL_NAME = process.env.MODEL_NAME || 'openai/gpt-4o-mini';
 
 // ---------- in-memory store ----------
 const runs = new Map();          // runId -> run object
@@ -124,31 +124,31 @@ Evidence lines:
 ${evidenceList}`;
 
   let modelJSON = null;
-  if (ANTHROPIC_API_KEY) {
+  if (AIPIPE_TOKEN) {
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const resp = await fetch(`${AIPIPE_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
+          'Authorization': `Bearer ${AIPIPE_TOKEN}`,
         },
         body: JSON.stringify({
           model: MODEL_NAME,
-          max_tokens: 800,
-          system: sys,
-          messages: [{ role: 'user', content: user }],
+          messages: [
+            { role: 'system', content: sys },
+            { role: 'user', content: user },
+          ],
         }),
       });
       const data = await resp.json();
-      const text = (data.content || []).map(c => c.text || '').join('');
+      const text = data.choices?.[0]?.message?.content || '';
       const cleaned = text.replace(/```json|```/g, '').trim();
       modelJSON = JSON.parse(cleaned);
     } catch (e) {
       modelJSON = null; // fall through to heuristic
     }
   }
-
+  
   if (!modelJSON) {
     // Heuristic fallback (no API key / parse failure): keep the run functional.
     const rc = (incident.allowedRootCauses || [])[0] || 'unknown';
