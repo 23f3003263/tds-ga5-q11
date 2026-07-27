@@ -127,6 +127,8 @@ ${evidenceList}`;
   let modelJSON = null;
   if (AIPIPE_TOKEN) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const resp = await fetch(`${AIPIPE_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -140,7 +142,9 @@ ${evidenceList}`;
             { role: 'user', content: user },
           ],
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       const rawText = await resp.text();
       if (!resp.ok) {
         console.error(`AI Pipe HTTP ${resp.status}: ${rawText.slice(0, 500)}`);
